@@ -12,6 +12,7 @@
   },
   "files": [
     "host/*.js",
+    "host/bridge/",
     "client/index.js",
     "!**/*.test.js",
     "cordis.patch.yml",
@@ -21,6 +22,7 @@
     "README.md"
   ],
   "engines": {
+    "node": ">=22.19.0",
     "dsh": "0.2.3-alpha.2"
   },
   "dsh": {
@@ -38,15 +40,22 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/dsh-typert-protocol": "0.2.3-alpha.2"
+    "@deepseek-ai/dsh-atomic-write": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-attachment": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-brand": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-home-paths": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-llm": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-timeout": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.3-alpha.2",
+    "@earendil-works/pi-ai": "1.6.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.2.0-alpha.1",
     "@deepseek-ai/dsh-api-gateway": "0.2.3-alpha.2",
-    "@deepseek-ai/dsh-typert-registry": "0.2.3-alpha.2",
-    "@deepseek-ai/dsh-client-connection": "0.2.3-alpha.2",
-    "@deepseek-ai/dsh-authorization": "0.2.3-alpha.2",
     "@deepseek-ai/dsh-api-remote-access": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-authorization": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-client-connection": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-typert-registry": "0.2.3-alpha.2",
     "zod": "4.6.6"
   },
   "scripts": {

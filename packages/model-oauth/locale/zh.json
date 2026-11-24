@@ -1,1 +1,1 @@
-{"meta":{"title":"模型登录","description":"使用当前 Harness 主机提供的 OAuth 方式登录模型服务商。"}}
+{"meta":{"title":"模型登录","description":"登录并启用 OpenAI (ChatGPT) 模型，或为主机已有的模型服务商授权。"}}

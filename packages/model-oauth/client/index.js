@@ -35,6 +35,9 @@ window.__ModuleLoader__.load({
       refresh: 'Refresh providers', signIn: 'Sign in', again: 'Sign in again', replace: 'Sign in and replace API key', savedKey: 'An API key is saved for this provider. Successful sign-in replaces it.', signedIn: 'This provider already has a saved OAuth grant.', inFlight: 'A sign-in is already in progress. Refresh after it finishes or after cancelling.', busy: 'Waiting for the provider. Follow the instructions below when they appear.',
       authorized: 'Grant saved. Configure or select the provider in Models.', cancelled: 'Sign-in cancelled.', failed: 'Sign-in failed. Start a new sign-in to retry.',
       open: 'Open verification page', submit: 'Continue', cancel: 'Cancel',
+      openaiHint: 'Sign in to enable OpenAI (ChatGPT) in the chat model picker. No API key or provider setup is needed.',
+      enabled: 'OpenAI (ChatGPT) is enabled. Choose a model in chat.',
+      enable: 'Sign in and enable',
     }
     const zh = {
       title: '模型登录', intro: '使用服务商账号登录。完成前请停留在此页面；离开将取消本次登录。', warning: '请仅使用受信任的目录端点。如果复用服务商 ID 并设置自定义基础 URL，官方适配器可能会将 OAuth 凭据发送到该地址。',
@@ -42,6 +45,9 @@ window.__ModuleLoader__.load({
       refresh: '刷新服务商', signIn: '登录', again: '重新登录', replace: '登录并替换 API 密钥', savedKey: '此服务商已有保存的 API 密钥。登录成功后将替换该密钥。', signedIn: '此服务商已有保存的 OAuth 授权。', inFlight: '已有登录进行中。请在完成或取消后刷新状态。', busy: '正在等待服务商。若下方出现提示，请按提示继续。',
       authorized: '授权已保存。请在「模型」中配置或选择服务商。', cancelled: '登录已取消。', failed: '登录失败，请重新登录。',
       open: '打开验证页面', submit: '继续', cancel: '取消',
+      openaiHint: '登录后即可在聊天模型列表中选择 OpenAI (ChatGPT)，无需填写 API Key 或另行添加提供商。',
+      enabled: '已启用 OpenAI (ChatGPT)，可在聊天框中选择模型。',
+      enable: '登录并启用',
     }
 
     function safeLink(value) {
@@ -187,6 +193,7 @@ window.__ModuleLoader__.load({
       }, [operations, revision])
       const row = rows?.find(r => r.key === selected) ?? rows?.[0]
       const busy = session.status === 'busy'
+      const own = row?.key === 'arkli-model-oauth/openai'
       return h('section', { className: 'arkli-model-oauth', 'aria-label': t('title') },
         h('style', null, sectionCss),
         h('header', null, h('h2', null, t('title')), h('p', null, t('intro'))),
@@ -194,17 +201,17 @@ window.__ModuleLoader__.load({
         !row && h('p', { role: listError ? 'alert' : 'status' }, t(listError ? 'listFailed' : rows ? 'empty' : 'loading')),
         row && h('label', null, t('provider'), ' ', h('select', { disabled: busy, value: row.key, onChange: e => { select(e.target.value); setSession({}) } },
           rows.map(r => h('option', { key: r.key, value: r.key }, r.label)))),
-        row?.recordKind === 'grant' && h('p', { className: 'saved' }, t('signedIn')),
+        row?.recordKind === 'grant' && !(own && session.status === 'authorized') && h('p', { className: 'saved' }, t(own ? 'enabled' : 'signedIn')),
         row?.recordKind === 'api-key' && h('p', { className: 'warning' }, t('savedKey')),
-        h('p', { className: 'warning' }, t('warning')),
+        !(own && row.recordKind === 'grant') && h('p', { className: own ? undefined : 'warning' }, t(own ? 'openaiHint' : 'warning')),
         row?.inFlight && h('p', null, t('inFlight')),
-        session.status && h('p', { role: session.status === 'failed' ? 'alert' : 'status' }, t(session.status)),
+        session.status && !(session.status === 'authorized' && !row) && h('p', { role: session.status === 'failed' ? 'alert' : 'status' }, t(own && session.status === 'authorized' ? 'enabled' : session.status)),
         busy && h('div', { 'aria-live': 'polite', 'aria-relevant': 'additions text' }, session.notices?.map((n, i) => h('p', { key: i }, n.message, ' ', n.code && h('code', null, n.code), ' ',
           n.url && h('a', { href: n.url, target: '_blank', rel: 'noopener noreferrer' }, t('open'))))),
         session.questions?.map(q => h(Answer, { key: q.id, question: q, t })),
         h('div', { className: 'actions' }, busy
           ? h('button', { type: 'button', onClick: () => current.current.cancel() }, t('cancel'))
-          : row && h('button', { className: 'primary', type: 'button', disabled: row.inFlight, onClick: () => current.current.start(row.key) }, t(row.recordKind === 'grant' ? 'again' : row.recordKind === 'api-key' ? 'replace' : 'signIn')),
+          : row && h('button', { className: 'primary', type: 'button', disabled: row.inFlight, onClick: () => current.current.start(row.key) }, t(row.recordKind === 'grant' ? 'again' : row.recordKind === 'api-key' ? 'replace' : own ? 'enable' : 'signIn')),
           !busy && h('button', { type: 'button', onClick: () => refresh(v => v + 1) }, t('refresh')))))
     }
 

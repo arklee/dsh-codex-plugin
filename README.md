@@ -6,7 +6,7 @@ A pnpm + TypeScript monorepo for developing and distributing DeepSeek Harness pl
 
 The workspace, Host plugin scaffold, aggregate assembly generator, package-content validation, independent versioning, and CI are implemented.
 
-[Model sign-in](packages/model-oauth/README.md) is available standalone and in the suite. It uses stock DSH model authorization flows without changing pi-ai. `templates/host-plugin` is a development scaffold that is disabled by default and does not claim to provide any functionality. No user DSH profile has been modified, and no npm packages have been published.
+[Model sign-in](packages/model-oauth/README.md) is available standalone and in the suite. It adds a sign-in-to-enable OpenAI (ChatGPT) route with its own pi-ai 1.6.0 dependency and retains stock model authorization flows. `templates/host-plugin` is a development scaffold that is disabled by default and does not claim to provide any functionality. No user DSH profile has been modified, and no npm packages have been published.
 
 ## Quick start
 

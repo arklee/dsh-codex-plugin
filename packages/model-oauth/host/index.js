@@ -1,5 +1,6 @@
 import { RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { converse } from './conversation.js'
+import { grantKey, mountOpenAI } from './openai.js'
 
 const namespace = 'modelOauth'
 const packageName = '@arkli/dsh-model-oauth'
@@ -58,13 +59,14 @@ function eligibleRoutes(settings) {
 
 function flows(authorization, settings) {
   // DSH CredentialKey is <scope>/<id>. Never expose account/connector flows or API-key methods.
-  const candidates = (authorization?.list() ?? []).filter(({ key }) => key.startsWith('llm-pi-ai/'))
+  const candidates = (authorization?.list() ?? []).filter(({ key }) => key === grantKey || key.startsWith('llm-pi-ai/'))
     .map(({ key, label, methods, inFlight }) => ({ key, label, inFlight,
       methods: methods.filter(({ id }) => id === 'oauth').map(({ id, label }) => ({ id, label })),
     })).filter(({ methods }) => methods.length)
   if (!candidates.length) return []
   const eligible = eligibleRoutes(settings)
-  return candidates.filter(({ key }) => eligible(key.slice('llm-pi-ai/'.length)))
+  return [...candidates.filter(({ key }) => key === grantKey),
+    ...candidates.filter(({ key }) => key !== grantKey && eligible(key.slice('llm-pi-ai/'.length)))]
 }
 
 export default class ModelOauth extends TypertRemoteService {
@@ -75,6 +77,7 @@ export default class ModelOauth extends TypertRemoteService {
     this.lifetime = new AbortController()
     ctx.effect(() => () => this.lifetime.abort())
     ctx.typert.register(contribution)
+    ctx.inject(['llm', 'credentials', 'authorization'], mountOpenAI)
   }
 
   async list() {
