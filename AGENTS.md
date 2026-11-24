@@ -1,202 +1,212 @@
-# DSH 插件 monorepo 开发约定
+# DSH Plugin Monorepo Development Guidelines
 
-## 项目目标
+## Project goals
 
-本仓库用于开发一系列 DeepSeek Harness（DSH）插件：
+This repository is intended for developing a collection of DeepSeek Harness (DSH) plugins:
 
-- 所有插件在同一个 Git monorepo 中维护。
-- 每个功能可以作为独立 npm 包和 DSH bundle 安装。
-- 提供一个聚合 suite bundle，用于一次安装整套功能。
-- 后续可以增加按场景划分的组合 bundle，而不复制功能实现。
+- Maintain all plugins in a single Git monorepo.
+- Allow each feature to be installed as an independent npm package and DSH bundle.
+- Provide an aggregate suite bundle for installing the entire collection at once.
+- Allow future scenario-specific bundles without duplicating feature implementations.
 
-本文件描述目标架构，不代表目录、工具链或功能已经实现。修改前先检查仓库现状；不要仅为符合示意结构而进行无关迁移。本文中的 `@arkli` 是示例 scope，发布前需确认实际使用并有权限的命名空间。
+This document describes the target architecture; it does not imply that the directories, tooling, or features already exist. Inspect the repository before making changes, and do not perform unrelated migrations just to match the example structure. `@arkli` is an example scope; confirm the actual namespace and your publication permissions before publishing.
 
-## 默认技术选择
+## Local reference source repositories
 
-- 使用 pnpm workspace 管理 monorepo，提交统一的锁文件。
-- 优先使用 TypeScript 和 ESM。
-- 使用 Changesets 管理独立版本和发布说明。
-- 初期不引入 Nx、Turborepo 或自建插件框架；只有明确的需求才能增加基础设施。
-- 仓库根包设置 `private: true`，不作为 DSH 安装入口。
-- 发布包预先构建，不依赖用户安装时执行编译脚本。
+When inspecting related implementations, prefer these local source directories (`~` denotes the current user's home directory):
 
-## 目标目录
+- DeepSeek Harness (DSH): `~/Code/agent-playground/deepseek-harness`
+- pi: `~/Code/agent-playground/pi`
+
+These are reference source repositories, not this plugin monorepo. Confirm that each directory exists and check its version before using it. When verifying DSH behavior, also confirm that the source matches the target runtime version. Permission to inspect source does not authorize changes to these repositories. Do not include reference source paths in plugin runtime dependencies or published artifacts.
+
+## Default technology choices
+
+- Use pnpm workspaces to manage the monorepo and commit a shared lockfile.
+- Prefer TypeScript and ESM.
+- Use Changesets for independent versioning and release notes.
+- Do not introduce Nx, Turborepo, or a custom plugin framework initially; add infrastructure only for a concrete need.
+- Set the root package to `private: true`; it is not a DSH installation entry point.
+- Build published packages ahead of time; do not depend on compilation during user installation.
+
+## Target directory structure
 
 ```text
 packages/
-  codex/                 # 示例功能包
+  codex/                 # Example feature package
     package.json
     cordis.patch.yml
     src/
-      index.ts           # Host 入口
-      client.ts          # 可选 UI 入口
-    dist/                # 构建产物
+      index.ts           # Host entry
+      client.ts          # Optional UI entry
+    dist/                # Build output
     locale/
     docs/
     icon.svg
     tests/
-  git-tools/             # 示例功能包，按实际需要创建
-  notes/                 # 示例功能包，按实际需要创建
-  shared/                # 可选的普通共享库
-  suite/                 # 聚合 bundle，不包含功能实现
+  git-tools/             # Example feature; create only when needed
+  notes/                 # Example feature; create only when needed
+  shared/                # Optional ordinary shared library
+  suite/                 # Aggregate bundle; no feature implementation
 scripts/
-  generate-suite.ts      # 按需实现聚合装配生成
-  check-packages.ts      # 按需实现包与发布产物校验
+  generate-suite.ts      # Implement aggregate assembly generation as needed
+  check-packages.ts      # Implement package and artifact validation as needed
 tests/
   integration/
 .changeset/
 ```
 
-功能名称仅用于示例，不应在未收到需求时创建空插件。
+Feature names are examples only. Do not create empty plugins without a corresponding request.
 
-## 包与职责边界
+## Package responsibilities and boundaries
 
-### 功能包
+### Feature packages
 
-每个功能包同时提供：
+Each feature package provides:
 
-1. 插件实现及必要的运行时 exports。
-2. 通过 `dsh.bundle.patch` 声明的独立安装入口。
-3. 默认装配 patch。
-4. 本地化标题、描述、图标和必要的使用文档。
-5. 单元测试及与该功能相关的集成验证。
+1. The plugin implementation and required runtime exports.
+2. An independent installation entry declared through `dsh.bundle.patch`.
+3. A default assembly patch.
+4. Localized titles and descriptions, an icon, and necessary usage documentation.
+5. Unit tests and integration checks relevant to the feature.
 
-插件包名使用统一前缀，例如 `@arkli/dsh-codex`。Loader 行 ID 使用稳定、带命名空间的名称，例如 `arkli-codex`。不要将版本号或本地路径编码进 ID。
+Use a consistent prefix for plugin package names, such as `@arkli/dsh-codex`. Loader row IDs must be stable and namespaced, such as `arkli-codex`. Do not encode versions or local paths in IDs.
 
-一个功能可以包含多条必要的 Host/Client 装配记录；不要把“一个功能包”机械理解为“只能有一条插件行”。
+A feature may require multiple Host/Client assembly records. A single feature package is not necessarily limited to one plugin row.
 
-### 聚合 bundle
+### Aggregate bundles
 
-suite 只负责依赖声明和装配，不复制功能代码，不实现跨插件业务逻辑。
+The suite only declares dependencies and assembles plugins. It must not copy feature code or implement cross-plugin business logic.
 
-- 在 `dependencies` 中声明所包含的功能包。
-- 在自己的 `dsh.bundle.patch` 中明确声明聚合装配。
-- 不假设依赖包的 bundle patch 会自动递归执行。
-- 不依赖 monorepo 根目录的 hoisting 或未声明依赖。
-- 所有发布包都必须能在仓库外解析自身声明的运行时依赖。
+- Declare included feature packages in `dependencies`.
+- Explicitly declare aggregate assembly in the suite's own `dsh.bundle.patch`.
+- Do not assume that dependency bundles' patches execute recursively.
+- Do not rely on root-level hoisting or undeclared dependencies.
+- Every published package must resolve its declared runtime dependencies outside the monorepo.
 
-### 共享代码
+### Shared code
 
-- 只有出现真实复用需求时才抽取共享库。
-- 普通函数、类型和协议放入共享库，或按需构建进功能包。
-- 运行时共享状态或服务使用明确的 provider 插件及 Cordis 注入。
-- npm 依赖关系不等于 Cordis 运行时装配关系。
-- 可选联动不应使独立功能强制依赖整个 suite。
-- 不允许循环包依赖。
-- 不允许通过 `../../other-plugin/src` 跨包引用源码；使用明确的包 exports。
+- Extract shared libraries only when there is a real reuse requirement.
+- Put ordinary functions, types, and protocols in shared libraries, or bundle them into feature packages as needed.
+- Use explicit provider plugins and Cordis injection for shared runtime state or services.
+- npm dependency relationships are not Cordis runtime assembly relationships.
+- Optional integrations must not force an independent feature to depend on the entire suite.
+- Circular package dependencies are not allowed.
+- Do not import another package's source through paths such as `../../other-plugin/src`; use explicit package exports.
 
-## DSH 开发规则
+## DSH development rules
 
-### 先确认当前版本和 API
+### Confirm the current version and APIs first
 
-DSH 的插件协议可能随版本变化。开发、升级或排查问题前：
+DSH plugin protocols may change between versions. Before development, upgrades, or troubleshooting:
 
-1. 若当前环境提供 `dsh-doc` skill，先加载并遵循它。
-2. 优先通过 `cordis_inspect` 确认当前运行版本、服务、事件、配置 schema 和相关 Client 扩展点。
-3. 根据当前安装版本的文档和源码确认 manifest、装配和构建规则。
-4. 不凭记忆猜测 API，不使用另一个版本的实现来证明当前版本行为。
+1. Load and follow the `dsh-doc` skill if it is available in the current environment.
+2. Prefer `cordis_inspect` to confirm the running version, services, events, configuration schemas, and relevant Client extension points.
+3. Confirm manifest, assembly, and build requirements against the documentation and source for the installed version.
+4. Do not guess APIs from memory or use another version's implementation as evidence of current behavior.
 
-架构讨论时核对过的版本是 `0.2.3-alpha.2`，它不是永久兼容性承诺。设置 `engines.dsh` 前必须重新确认目标版本；预发布版本的兼容范围应保留适当的预发布后缀，且不得宣称未经测试的兼容范围。
+The version checked during the architecture discussion was `0.2.3-alpha.2`; this is not a permanent compatibility promise. Reconfirm the target version before setting `engines.dsh`. Prerelease compatibility ranges must retain appropriate prerelease suffixes, and you must not claim untested compatibility.
 
-### Manifest 与发布内容
+### Manifests and published contents
 
-每个可安装 bundle 应声明 `dsh.bundle.patch`，并保证它指向发布包内实际存在的文件。
+Every installable bundle must declare `dsh.bundle.patch` and ensure that it points to a file actually included in the published package.
 
-- Host 入口 exports 必须指向实际构建产物。
-- 按当前 DSH 规则声明 Client 入口和构建产物，不假设 Host exports 能代替 Client manifest。
-- 保留运行时 exports，同时提供所需的 locale 和图标 exports。
-- 使用 `files` 明确包含构建产物、patch、locale、图标及文档资源。
-- 提供英文和中文的 `meta.title`、`meta.description`，内容必须描述真实实现。
-- 提供原创或具有再分发许可的图标，并保留必要署名。
-- 可选详情文档和预览资源按当前 DSH 规则提供，不虚构能力。
-- 对外发布包不得设置 `private: true`；根包及不发布的开发工具包应设置。
+- Host entry exports must point to real build output.
+- Declare Client entries and build artifacts according to current DSH requirements; Host exports do not replace a Client manifest.
+- Preserve runtime exports and provide the required locale and icon exports.
+- Use `files` to explicitly include build output, patches, locales, icons, and documentation resources.
+- Provide English and Chinese `meta.title` and `meta.description` values that accurately describe the implementation.
+- Provide original icons or icons licensed for redistribution, with any required attribution.
+- Supply optional detail documents and preview resources according to current DSH requirements; do not invent capabilities.
+- Publicly published packages must not set `private: true`; the root package and unpublished development tools should set it.
 
-### 生命周期和配置
+### Lifecycle and configuration
 
-- Host 插件遵循当前 DSH 支持的导出形式，不混用互斥形式。
-- 工具、事件、UI 等资源注册应绑定插件生命周期，并按对应 API 正确释放。
-- 热重载和停用后不得遗留监听器、后台任务或重复 UI 注册。
-- 配置按 schema 校验；只有允许空配置的插件才能使用 `config: {}`。
-- 凭证不得进入源码、默认 patch、测试快照或日志；使用 DSH 支持的配置和凭证机制。
-- 修改已有 patch 前先读取内容；覆盖 `config` 时按整体替换处理，不假设深合并。
+- Use a Host export form supported by the current DSH version; do not mix mutually exclusive forms.
+- Bind tool, event, UI, and other resource registrations to the plugin lifecycle and dispose of them through the corresponding APIs.
+- Hot reload and disable operations must not leave listeners, background tasks, or duplicate UI registrations behind.
+- Validate configuration against its schema. Use `config: {}` only for plugins that allow empty configuration.
+- Keep credentials out of source, default patches, test snapshots, and logs; use DSH-supported configuration and credential mechanisms.
+- Read existing patches before editing them. Treat a `config` override as a complete replacement, not a deep merge.
 
-## 装配来源与生成
+## Assembly sources and generation
 
-功能包的默认 patch 是该功能默认装配的事实来源。suite 的聚合 patch 优先由构建脚本确定性生成，以避免人工维护两份内容。
+A feature package's default patch is the source of truth for its default assembly. Prefer deterministic build-time generation of the suite patch to avoid maintaining duplicate assembly declarations by hand.
 
-生成器必须：
+The generator must:
 
-- 明确列出被聚合的功能包，不依赖不稳定的扫描顺序。
-- 保留稳定行 ID 和必要装配信息。
-- 校验重复 ID、缺失依赖和不支持的 patch 形式。
-- 优先使用 npm 包名引用插件。
-- 正确处理路径锚点；不能直接拼接含相对路径的 patch 并假设语义不变。
-- 不把 YAML 当普通文本随意拼接，不破坏 DSH 使用的标签或表达式。
-- 输出可复现，并在 CI 中校验生成结果与源声明一致。
+- Explicitly list included feature packages rather than relying on unstable scan order.
+- Preserve stable row IDs and required assembly information.
+- Validate duplicate IDs, missing dependencies, and unsupported patch forms.
+- Prefer npm package names when referencing plugins.
+- Handle path anchors correctly; do not simply concatenate patches containing relative paths and assume their meaning is unchanged.
+- Parse YAML properly rather than concatenating it as arbitrary text; do not corrupt DSH tags or expressions.
+- Produce reproducible output and check in CI that generated files match their source declarations.
 
-在生成器支持复杂覆盖、嵌套分组或表达式之前，应明确拒绝不支持的输入，不要静默丢弃字段。生成文件应标明来源，不直接手工修改。
+Until complex overrides, nested groups, or expressions are supported, explicitly reject them rather than silently dropping fields. Mark generated files with their sources and do not edit them manually.
 
-## 独立安装与 suite 安装
+## Standalone and suite installation
 
-第一版采用明确的装配所有权规则：
+The initial design uses an explicit assembly ownership rule:
 
-> 同一功能在同一 profile 中，仅由一个启用中的 bundle 提供装配。
+> Within one profile, exactly one enabled bundle owns the assembly of a given feature.
 
-- 支持单独启用功能 bundle，或由 suite 提供该功能。
-- 从单插件迁移到 suite 时，先禁用重叠的单插件 bundle。
-- 从 suite 迁移回单插件时，也应移除重叠装配。
-- 单插件和 suite 对同一功能使用一致的稳定行 ID。
-- 一致 ID 不代表已经实现去重；不得依赖未经验证的重复插入行为。
-- 不使用不同 ID 来绕过冲突，否则可能导致功能执行两次。
-- suite 内的功能开关应尊重服务依赖；不能关闭 provider 后仍声称依赖功能可用。
+- Support enabling a standalone feature bundle or providing that feature through the suite.
+- Disable overlapping standalone bundles before migrating to the suite.
+- Remove overlapping assembly when migrating from the suite back to standalone bundles.
+- Use the same stable row IDs for a feature in standalone and suite assembly.
+- Matching IDs do not imply deduplication; do not rely on unverified duplicate-insertion behavior.
+- Do not work around conflicts by using different IDs, which could execute the feature twice.
+- Feature toggles in the suite must respect service dependencies. Do not disable a provider and still claim its dependent features are usable.
 
-如需支持任意混装、自动迁移或共享功能的引用计数，必须单独设计并测试，不能假设 npm 依赖去重解决了运行时装配问题。
+Arbitrary mixed installation, automatic migration, and reference counting for shared features require separate design and testing. Do not assume npm dependency deduplication solves runtime assembly problems.
 
-## 版本与发布
+## Versioning and publication
 
-- 功能包独立版本，不因无关插件变化强制同步升级。
-- suite 独立版本，表示一组已验证的功能组合。
-- workspace 内依赖使用 `workspace:*`，通过 pnpm 正确的打包/发布流程转成可分发版本。
-- 初期 suite 优先固定功能包版本，提高安装可复现性。
-- 功能版本变化后检查 suite 的依赖与发布说明是否需要更新。
-- 使用 Changesets 记录用户可见变更、破坏性变更和迁移要求。
-- 发布前检查实际 tarball，而不只检查工作区目录。
-- 未经用户明确授权，不执行 npm 发布、推送 Git 标签或正式 release。
+- Version feature packages independently; unrelated plugin changes must not force synchronized upgrades.
+- Version the suite independently to represent a verified combination of features.
+- Use `workspace:*` for internal dependencies and convert them into distributable versions through the proper pnpm packing/publication workflow.
+- Initially prefer exact feature versions in the suite for reproducible installation.
+- When a feature version changes, check whether the suite's dependencies and release notes also need updates.
+- Use Changesets to record user-visible changes, breaking changes, and migration requirements.
+- Inspect actual tarballs before publishing, not just workspace directories.
+- Do not publish to npm, push Git tags, or perform an official release without explicit user authorization.
 
-## 测试与质量门禁
+## Testing and quality gates
 
-修改后运行仓库已有的相关检查；先读取实际 scripts，不假设命令已存在。新建工具链时再补充一致的构建、类型检查、测试和打包校验命令。
+Run the repository's relevant existing checks after changes. Read the actual scripts first instead of assuming commands exist. When introducing tooling, add consistent build, typecheck, test, and package-validation commands.
 
-最低覆盖要求：
+Minimum coverage requirements:
 
-1. 每个功能包独立构建和测试。
-2. 发布包内存在 manifest 声明的入口及所有必要资源。
-3. 在干净环境中从打包产物安装单个功能，不依赖仓库根目录。
-4. suite 可以解析依赖并装配全部声明功能。
-5. 停用、重载和重新启用不会重复注册工具、事件或 UI。
-6. 单插件与 suite 之间的迁移行为符合约定。
-7. 必需服务、可选联动和不完整配置的行为有验证。
-8. 聚合 patch 与功能包默认装配一致。
-9. UI 变化验证真实 DSH 页面；安装成功或 slot 注册成功不等于视觉验证通过。
+1. Each feature package builds and tests independently.
+2. Published packages contain all manifest-declared entries and required resources.
+3. Individual features install from packed artifacts in a clean environment without depending on the repository root.
+4. The suite resolves its dependencies and assembles every declared feature.
+5. Disable, reload, and re-enable operations do not duplicate tool, event, or UI registrations.
+6. Migration between standalone and suite installations follows the ownership rules.
+7. Required services, optional integrations, and incomplete configuration have verified behavior.
+8. The aggregate patch matches the default assembly of its feature packages.
+9. UI changes are verified on the actual DSH page; successful installation or slot registration is not visual verification.
 
-尽可能在隔离的测试环境或 profile 验证，不擅自修改用户日常使用的 profile。不能执行的测试必须报告原因和剩余风险，不得把未执行检查写成通过。
+Use isolated test environments or profiles whenever possible. Do not modify the user's daily profile without permission. Report why any tests could not be run and the remaining risks; never report unexecuted checks as passed.
 
-## 与 DSH 环境交互
+## Interacting with the DSH environment
 
-- 设计、审查或生成文档不代表获得安装插件或修改 profile 的授权。
-- 在用户明确请求安装时，优先使用 DSH 提供的 `plugin_manager` 流程。
-- 不手工修改用户 profile 的依赖或 patch 来绕过插件管理流程。
-- 未经用户明确批准，不批准依赖安装脚本，不绕过版本兼容性检查。
-- 本地开发安装选择具体功能包或 suite 的目录，不把 private 的仓库根目录当成 bundle。
-- DSH 自身源码 checkout 与本仓库可能不同；不得把插件开发变成未授权的 Harness 内核修改。
-- 修改 Client 代码前确认构建与 HMR 条件；不要在未验证时承诺自动更新。
+- Designing, reviewing, or generating documentation does not authorize plugin installation or profile changes.
+- When the user explicitly requests installation, prefer the DSH `plugin_manager` workflow.
+- Do not bypass plugin management by manually editing profile dependencies or patches.
+- Do not approve dependency installation scripts or bypass compatibility checks without explicit user approval.
+- For local development installation, select a specific feature package or suite directory, not the private monorepo root.
+- The DSH source checkout may differ from this repository. Do not turn plugin development into unauthorized Harness core changes.
+- Confirm build and HMR conditions before changing Client code; do not promise automatic updates without verification.
 
-## Agent 工作方式
+## Agent working practices
 
-- 修改前读取相关代码和文档，遵循已存在的约定。
-- 保持改动范围聚焦，不顺带迁移工具链、重命名包或重构无关功能。
-- 不覆盖用户已有修改，不提交密钥、用户配置或本地绝对路径。
-- 新增依赖必须说明用途，优先使用已有能力。
-- 包名、行 ID、配置字段和 exports 视为兼容性接口；变更时提供迁移说明。
-- 涉及多个包的修改，应明确实施顺序、兼容性影响和验证范围。
-- 完成后说明：改了什么、验证了什么、哪些内容未验证，以及是否需要安装、重载或迁移。
+- Write repository documentation and README templates in English. Keep localized UI resources in their respective languages.
+- Read relevant code and documentation before editing, and follow existing conventions.
+- Keep changes focused. Do not perform unrelated tooling migrations, package renames, or feature refactors.
+- Do not overwrite user changes or commit secrets, user configuration, or local absolute paths.
+- Explain the purpose of new dependencies and prefer existing capabilities.
+- Treat package names, row IDs, configuration fields, and exports as compatibility interfaces; provide migration guidance when changing them.
+- For changes spanning multiple packages, specify the implementation order, compatibility impact, and validation scope.
+- On completion, report what changed, what was verified, what remains unverified, and whether installation, reload, or migration is required.

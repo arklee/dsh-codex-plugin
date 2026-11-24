@@ -1,16 +1,16 @@
 # DSH plugins monorepo
 
-一个用于开发和分发 DeepSeek Harness 插件的 pnpm + TypeScript monorepo：**单个功能可独立安装，suite 可聚合安装**。
+A pnpm + TypeScript monorepo for developing and distributing DeepSeek Harness plugins: **install each feature independently, or install a suite that combines them**.
 
-## 当前状态
+## Current status
 
-已实现 workspace、Host 插件脚手架、聚合装配生成器、发布内容校验、独立版本管理和 CI。
+The workspace, Host plugin scaffold, aggregate assembly generator, package-content validation, independent versioning, and CI are implemented.
 
-**还没有 Codex 或其他业务插件。** `packages/suite` 当前为空；`templates/host-plugin` 是默认停用的开发骨架，不声称提供功能。没有修改用户 DSH profile，也没有发布 npm 包。
+**There is no Codex integration or other feature plugin yet.** `packages/suite` is currently empty; `templates/host-plugin` is a development scaffold that is disabled by default and does not claim to provide any functionality. No user DSH profile has been modified, and no npm packages have been published.
 
-## 快速开始
+## Quick start
 
-需要 **Node.js ≥ 22.18** 和 **pnpm 11.28.5**。使用你已有的 pnpm/Corepack 安装方式；仓库固定 `packageManager` 版本。
+Requires **Node.js ≥ 22.18** and **pnpm 11.28.5**. Use your existing pnpm/Corepack installation method; the repository pins the `packageManager` version.
 
 ```sh
 pnpm install --ignore-scripts
@@ -18,11 +18,11 @@ pnpm check
 pnpm check:pack
 ```
 
-pnpm 11 的工作区设置位于 `pnpm-workspace.yaml`。依赖安装脚本默认禁用，store/cache 位于本仓库忽略的目录中；不需要写入 DSH profile。
+pnpm 11 workspace settings are in `pnpm-workspace.yaml`. Dependency installation scripts are disabled by default, and the store/cache live in ignored directories within this repository; no writes to a DSH profile are required.
 
-### 新增一个插件
+### Add a plugin
 
-以下 `your-scope` 必须替换为你实际使用的 npm scope；`codex` 是示例名字，不代表已经实现 Codex 接入。
+Replace `your-scope` below with the npm scope you actually use. `codex` is an example name, not a claim that Codex integration has been implemented.
 
 ```sh
 pnpm create:plugin codex --scope your-scope --dsh-version 0.2.3-alpha.2
@@ -30,19 +30,19 @@ pnpm install --ignore-scripts
 pnpm --filter @your-scope/dsh-codex build
 ```
 
-然后：
+Then:
 
-1. 在 `packages/codex/src/index.ts` 实现功能；先查目标 DSH 版本及真实 API。
-2. 按需要添加依赖、Config schema、工具/事件/服务，并正确释放生命周期资源。
-3. 添加该包的测试与 `test` script，更新 README、双语 locale 和图标。
-4. 完成实现后，将该包 patch 的 `disabled: true` 改为需要的默认状态。
-5. 运行检查；明确请求在隔离 DSH profile 中安装和验证。
+1. Implement the feature in `packages/codex/src/index.ts`; first check the target DSH version and its actual APIs.
+2. Add dependencies, a Config schema, tools/events/services as needed, and release lifecycle-bound resources correctly.
+3. Add tests and a `test` script for the package, and update its README, bilingual locales, and icon.
+4. Once implementation is complete, change `disabled: true` in the package patch to the desired default state.
+5. Run the checks, then explicitly request installation and validation in an isolated DSH profile.
 
-脚手架不会覆盖已有目录，不会自动加入 suite，不会安装到 DSH。
+The scaffold does not overwrite existing directories, automatically add the plugin to the suite, or install it into DSH.
 
-### 加入 suite
+### Add it to the suite
 
-编辑 `suite.config.json`：
+Edit `suite.config.json`:
 
 ```json
 {
@@ -50,7 +50,7 @@ pnpm --filter @your-scope/dsh-codex build
 }
 ```
 
-执行：
+Run:
 
 ```sh
 pnpm suite:generate
@@ -59,57 +59,57 @@ pnpm check
 pnpm check:pack
 ```
 
-生成器更新 suite patch 和 workspace 依赖。**仅 npm 依赖不会递归激活子 bundle 的 patch。** 单插件与 suite 应避免同时启用重叠装配。
+The generator updates the suite patch and workspace dependencies. **npm dependencies alone do not recursively activate child bundles' patches.** Avoid enabling overlapping assemblies from both standalone plugins and the suite at the same time.
 
-完整流程见 [插件开发指南](docs/plugin-development.md)。
+See the [plugin development guide](docs/plugin-development.md) for the full process.
 
-## 常用命令
+## Common commands
 
-| 命令 | 用途 |
+| Command | Purpose |
 |---|---|
-| `pnpm create:plugin <slug> --scope <scope>` | 生成一个默认停用的 Host 开发骨架 |
-| `pnpm suite:generate` | 按显式清单生成 suite patch 和依赖 |
-| `pnpm suite:check` | 只检查生成内容是否漂移，不写文件 |
-| `pnpm build` | 生成 suite，然后按 workspace 顺序构建各包 |
-| `pnpm typecheck` | 检查工具脚本及各包类型 |
-| `pnpm test` | 工具单元测试、离线分发集成测试及各包测试 |
-| `pnpm check:packages` | 检查 bundle 入口、patch、元数据和资源 |
-| `pnpm check:pack` | 真正执行 pnpm pack 并校验 tarball 内容 |
-| `pnpm check` | 生成一致性、构建、类型检查、测试与目录资源校验 |
-| `pnpm changeset` | 为用户可见变更记录独立包版本说明 |
-| `pnpm version:packages` | 应用 Changesets，重新生成 suite 并更新锁文件 |
+| `pnpm create:plugin <slug> --scope <scope>` | Generate a Host development scaffold that is disabled by default |
+| `pnpm suite:generate` | Generate the suite patch and dependencies from an explicit list |
+| `pnpm suite:check` | Check for drift in generated content without writing files |
+| `pnpm build` | Generate the suite, then build packages in workspace order |
+| `pnpm typecheck` | Type-check tooling scripts and packages |
+| `pnpm test` | Run tooling unit tests, offline distribution integration tests, and package tests |
+| `pnpm check:packages` | Check bundle entry points, patches, metadata, and resources |
+| `pnpm check:pack` | Run pnpm pack and validate the actual tarball contents |
+| `pnpm check` | Check generated-file consistency, build, type-check, test, and validate resources in package directories |
+| `pnpm changeset` | Record independent package version notes for user-visible changes |
+| `pnpm version:packages` | Apply Changesets, regenerate the suite, and update the lockfile |
 
-`pnpm check` **不会替代** `pnpm check:pack`；CI 两者都执行。打包结果保留在忽略的 `.artifacts/pack-*` 中供检查。
+`pnpm check` **does not replace** `pnpm check:pack`; CI runs both. Packed artifacts are retained in ignored `.artifacts/pack-*` directories for inspection.
 
-## 目录
+## Directory layout
 
 ```text
-packages/suite/       聚合 bundle（初始为空）
-templates/host-plugin/ 开发模板，不是业务插件
-scripts/             脚手架、装配和包校验工具
-tests/               工具及隔离分发测试
-docs/                开发和发布指南
-.changeset/          独立版本管理配置
-.github/workflows/   CI（不自动发布）
+packages/suite/         Aggregate bundle (initially empty)
+templates/host-plugin/ Development template, not a feature plugin
+scripts/               Scaffolding, assembly, and package-validation tools
+tests/                 Tooling and isolated distribution tests
+docs/                  Development and release guides
+.changeset/            Independent versioning configuration
+.github/workflows/     CI (no automatic publishing)
 ```
 
-后续功能包放在 `packages/<slug>`。普通共享库可以放在 `packages/shared`，按真实复用需求再添加，不预先创建空库。
+Future feature packages belong in `packages/<slug>`. Ordinary shared libraries can go in `packages/shared`; add them only when there is a real reuse need, rather than creating empty libraries in advance.
 
-## 工具的支持边界
+## Tooling support boundaries
 
-- suite 生成器目前只支持单个 YAML patch 文件、平坦 `insert` 和普通 JSON 配置；拒绝覆盖、分组、相对插件名、YAML 标签（包括 `!!js`）、锚点和别名。不支持的形式会报错，不会悄悄丢字段。
-- bundle 校验器采用相同的受限 patch 方言。自行使用更复杂 DSH 特性前应扩展生成器、校验器和测试，而不是关掉检查。
-- 当前发布依赖策略支持 registry SemVer 范围；打包后拒绝 `workspace:`、本地路径、Git/URL 和其他非 SemVer 依赖声明。需要其它来源时先明确扩展策略。
-- 校验器检查资源存在和基本格式，不是完整 DSH Loader 或图像渲染器。Host 自引用入口要求显式 exports；不实现完整通配符和自定义条件解析。
-- 分发测试从模板临时生成两个默认停用的 fixture，编译、打包，并在仓库外离线安装单插件和 suite，确认运行时依赖可解析。它不等于真实 DSH 激活、迁移或 UI 验证。
+- The suite generator currently supports only a single YAML patch file, flat `insert` entries, and plain JSON configuration. It rejects overrides, groups, relative plugin names, YAML tags (including `!!js`), anchors, and aliases. Unsupported forms produce errors rather than silently dropping fields.
+- The bundle validator uses the same restricted patch dialect. Extend the generator, validator, and tests before using more complex DSH features, rather than disabling checks.
+- The current release dependency policy supports registry SemVer ranges. After packing, `workspace:`, local paths, Git/URL dependencies, and other non-SemVer dependency declarations are rejected. Explicitly extend the policy first if other sources are needed.
+- The validator checks resource existence and basic formats; it is not a complete DSH Loader or image renderer. Host self-referencing entry points require explicit exports; full wildcard and custom-condition resolution is not implemented.
+- Distribution tests temporarily generate two disabled-by-default fixtures from the template, compile and pack them, then install a standalone plugin and a suite offline outside the repository to verify that runtime dependencies resolve. This is not equivalent to actual DSH activation, migration, or UI validation.
 
-## 发布前必须确认
+## Required checks before publishing
 
-- 将 suite 的示例包名 `@arkli/dsh-suite` 改成拥有发布权限的名称；功能包 scope 由创建命令显式指定。
-- 初始 DSH 范围为精确 `0.2.3-alpha.2`，不是对其它版本的兼容性承诺；开发时重新确认。
-- 选择合适的许可证和仓库地址；此基础设施没有替你作许可证决定。
-- 将 `.changeset/config.json` 的 `baseBranch` 与实际默认分支对齐（默认 `main`）。
-- 实现业务功能并移除骨架/空套件描述后再发布，不发布没有功能的占位包。
-- 完整通过 `pnpm check && pnpm check:pack`，再按 [开发指南](docs/plugin-development.md) 做隔离 DSH 验证。
+- Replace the suite's example package name, `@arkli/dsh-suite`, with a name you have permission to publish; feature package scopes are specified explicitly in the creation command.
+- The initial DSH range is exactly `0.2.3-alpha.2`, not a promise of compatibility with other versions; verify it again during development.
+- Choose an appropriate license and repository URL; this infrastructure does not make a licensing decision for you.
+- Align `baseBranch` in `.changeset/config.json` with the actual default branch (`main` by default).
+- Implement real features and remove scaffold/empty-suite descriptions before publishing. Do not publish nonfunctional placeholder packages.
+- Pass all checks with `pnpm check && pnpm check:pack`, then perform isolated DSH validation as described in the [development guide](docs/plugin-development.md).
 
-没有自动发布脚本或凭证配置；发布、Git 推送和修改 profile 必须由维护者明确决定。
+There are no automatic publishing scripts or credential configuration. Publishing, Git pushes, and profile changes require an explicit decision by the maintainer.

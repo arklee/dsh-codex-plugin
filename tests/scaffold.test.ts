@@ -28,10 +28,13 @@ test('creates an honest disabled Host package without changing suite configurati
   assert.equal(result.directory, join(root, 'packages', 'my-feature'));
   const manifest = JSON.parse(await readFile(join(result.directory, 'package.json'), 'utf8'));
   assert.equal(manifest.engines.dsh, '0.2.3-alpha.2');
-  assert.equal(manifest.exports['.'].import, './dist/index.js');
+  assert.deepEqual(manifest.exports['.'], {
+    types: './dist/index.d.ts', import: './dist/index.js', default: './dist/index.js',
+  });
   assert.equal(manifest.scripts.build, 'tsc -p tsconfig.json');
   assert.equal(manifest.dsh.bundle.patch, './cordis.patch.yml');
   assert.equal(manifest.private, undefined);
+  assert.deepEqual(manifest.publishConfig, { access: 'public' });
   assert.equal(manifest.dependencies, undefined);
   assert.equal(manifest.dsh.client, undefined);
   assert.match(await readFile(join(result.directory, 'cordis.patch.yml'), 'utf8'), /disabled: true/);

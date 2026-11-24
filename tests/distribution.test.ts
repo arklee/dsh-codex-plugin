@@ -24,7 +24,10 @@ test('scaffold -> build -> standalone/suite tarballs -> offline clean consumers'
     await writeFile(join(workspace, 'pnpm-workspace.yaml'), stringify(settings));
     const alpha = await createPlugin({ root: workspace, slug: 'alpha', scope: 'fixture' });
     const beta = await createPlugin({ root: workspace, slug: 'beta', scope: 'fixture' });
-    await cp(join(repository, 'packages/suite'), join(workspace, 'packages/suite'), { recursive: true });
+    await cp(join(repository, 'packages/suite'), join(workspace, 'packages/suite'), {
+      recursive: true,
+      filter: source => !source.split(/[\\/]/).includes('node_modules'),
+    });
     const suiteManifestPath = join(workspace, 'packages/suite/package.json');
     const suite = JSON.parse(await readFile(suiteManifestPath, 'utf8'));
     suite.name = '@fixture/dsh-suite';

@@ -1,6 +1,6 @@
 # __PACKAGE_NAME__
 
-**Development scaffold only / 仅开发骨架。** No business functionality is implemented. The Host `apply()` is intentionally empty, and the patch row `__ROW_ID__` is disabled by default. Do not publish this scaffold as a finished feature.
+**Development scaffold only.** No business functionality is implemented. The Host `apply()` is intentionally empty, and the patch row `__ROW_ID__` is disabled by default. Do not publish this scaffold as a finished feature.
 
 ## Implement before enabling
 
@@ -21,7 +21,7 @@ No Client entry or pretend UI API is generated. Before adding UI, inspect live C
 
 The generator does not edit `suite.config.json`. Add this package to that explicit list manually, then run `pnpm suite:generate`. Keep the same stable row ID in independent and suite assembly. One enabled bundle owns a given feature per profile: disable overlapping standalone bundles before moving to the suite, and avoid duplicate activation when moving back.
 
-Confirm that you control the explicitly supplied npm scope before publication. Add license, repository metadata, and a Changeset according to repository policy. No publish, dependency install, profile mutation, or Git operation is performed by the generator.
+Complete implementation and verification before considering publication, and obtain explicit user authorization before any publish or release operation. Confirm that you control the explicitly supplied npm scope. The manifest sets `publishConfig.access` to `public` so a future authorized scoped-package release does not default to restricted access; this setting neither publishes anything nor grants publication permission. Add license, repository metadata, and a Changeset according to repository policy. No publish, dependency install, profile mutation, or Git operation is performed by the generator.
 
 ## Generator safety limits
 
