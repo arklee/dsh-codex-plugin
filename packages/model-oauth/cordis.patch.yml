@@ -1,0 +1,3 @@
+- insert:
+    - id: arkli-model-oauth
+      name: '@arkli/dsh-model-oauth'

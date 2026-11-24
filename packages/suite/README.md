@@ -1,6 +1,6 @@
 # Plugin suite
 
-This package is the aggregate installation entry for the repository's explicit plugin list. **The list is currently empty; it provides no Codex, Git, or other business functionality.** It prepares the repository for future combined distribution. Do not publish the empty suite to npm.
+This package is the aggregate installation entry for the repository's explicit plugin list. It currently includes [Model sign-in](../model-oauth/README.md), the owner-only browser interface for model provider OAuth.
 
 ## Maintenance
 
@@ -13,7 +13,7 @@ pnpm check
 pnpm check:pack
 ```
 
-The generator updates this package's patch and workspace dependencies without copying feature implementations. Do not edit the generated patch manually. When adding real features, update this README and both English and Chinese descriptions, remove the empty-suite notices, and accurately list the capabilities provided.
+The generator updates this package's patch and workspace dependencies without copying feature implementations. Do not edit the generated patch manually. Keep this list and both locales in sync with the included features.
 
 ## Installation and migration
 

@@ -1,7 +1,7 @@
 {
   "name": "@arkli/dsh-suite",
   "version": "0.1.0",
-  "description": "Explicit composition of the plugins in this workspace; initially empty.",
+  "description": "Installs the workspace model sign-in plugin.",
   "type": "module",
   "exports": {
     "./locale/*.json": "./locale/*.json",
@@ -21,7 +21,9 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "@arkli/dsh-model-oauth": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }

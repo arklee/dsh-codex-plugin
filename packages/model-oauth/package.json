@@ -1,0 +1,59 @@
+{
+  "name": "@arkli/dsh-model-oauth",
+  "version": "0.1.0",
+  "description": "Owner-only browser sign-in for DSH model providers",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./host/index.js",
+    "./client": "./client/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "host/*.js",
+    "client/index.js",
+    "!**/*.test.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": "0.2.3-alpha.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-api-gateway"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-typert-protocol": "0.2.3-alpha.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.2.0-alpha.1",
+    "@deepseek-ai/dsh-api-gateway": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-typert-registry": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-client-connection": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-authorization": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-api-remote-access": "0.2.3-alpha.2",
+    "zod": "4.6.6"
+  },
+  "scripts": {
+    "build": "node --check host/index.js && node --check client/index.js",
+    "test": "node --test"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

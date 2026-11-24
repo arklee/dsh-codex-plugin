@@ -6,7 +6,7 @@ A pnpm + TypeScript monorepo for developing and distributing DeepSeek Harness pl
 
 The workspace, Host plugin scaffold, aggregate assembly generator, package-content validation, independent versioning, and CI are implemented.
 
-**There is no Codex integration or other feature plugin yet.** `packages/suite` is currently empty; `templates/host-plugin` is a development scaffold that is disabled by default and does not claim to provide any functionality. No user DSH profile has been modified, and no npm packages have been published.
+[Model sign-in](packages/model-oauth/README.md) is available standalone and in the suite. It uses stock DSH model authorization flows without changing pi-ai. `templates/host-plugin` is a development scaffold that is disabled by default and does not claim to provide any functionality. No user DSH profile has been modified, and no npm packages have been published.
 
 ## Quick start
 
@@ -84,7 +84,8 @@ See the [plugin development guide](docs/plugin-development.md) for the full proc
 ## Directory layout
 
 ```text
-packages/suite/         Aggregate bundle (initially empty)
+packages/model-oauth/   Browser sign-in for model providers
+packages/suite/         Aggregate bundle
 templates/host-plugin/ Development template, not a feature plugin
 scripts/               Scaffolding, assembly, and package-validation tools
 tests/                 Tooling and isolated distribution tests

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Plugin suite",
-    "description": "Installs the explicitly selected workspace plugins together. This initial bundle is empty and adds no capabilities. Disable overlapping standalone bundles before enabling the suite."
+    "description": "Installs the explicitly selected workspace plugins together. Includes browser sign-in for model providers. Disable overlapping standalone bundles before enabling the suite."
   }
 }
