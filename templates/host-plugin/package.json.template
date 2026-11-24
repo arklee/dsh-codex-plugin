@@ -1,0 +1,18 @@
+{
+  "name": "__PACKAGE_NAME__",
+  "version": "0.0.0",
+  "description": "Development scaffold for __SLUG__; no business functionality implemented.",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["dist", "cordis.patch.yml", "locale", "icon.svg", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": { "dsh": "__DSH_VERSION__" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}

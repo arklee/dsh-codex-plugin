@@ -1,0 +1,30 @@
+{
+  "name": "dsh-plugins-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.28.5",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "create:plugin": "node scripts/create-plugin.ts",
+    "suite:generate": "node scripts/generate-suite.ts",
+    "suite:check": "node scripts/generate-suite.ts --check",
+    "build": "pnpm suite:generate && pnpm -r --if-present run build",
+    "typecheck": "tsc --noEmit && pnpm -r --if-present run typecheck",
+    "test": "node --test tests/*.test.ts && pnpm -r --if-present run test",
+    "check:packages": "node scripts/check-packages.ts",
+    "check:pack": "node scripts/check-packages.ts --pack",
+    "check": "pnpm suite:check && pnpm build && pnpm typecheck && pnpm test && pnpm check:packages",
+    "changeset": "changeset",
+    "version:packages": "changeset version && pnpm suite:generate && pnpm install --lockfile-only --ignore-scripts"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8",
+    "@types/node": "^22.19.0",
+    "@types/semver": "^7.7.1",
+    "semver": "^7.7.3",
+    "tar": "^7.5.2",
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.1"
+  }
+}

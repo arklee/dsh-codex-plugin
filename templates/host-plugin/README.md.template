@@ -1,0 +1,28 @@
+# __PACKAGE_NAME__
+
+**Development scaffold only / 仅开发骨架。** No business functionality is implemented. The Host `apply()` is intentionally empty, and the patch row `__ROW_ID__` is disabled by default. Do not publish this scaffold as a finished feature.
+
+## Implement before enabling
+
+1. Load the DSH `dsh-doc` skill when available. Inspect `Runtime.getVersion` and the specific Service/Event/Config contracts with `cordis_inspect`; confirm the documentation and source match the target runtime.
+2. This scaffold targets exactly `__DSH_VERSION__` in `engines.dsh`. The generator's default `0.2.3-alpha.2` is a development baseline, **not a permanent compatibility promise**. Recheck it during development and upgrades. Do not widen a prerelease range without testing.
+3. Implement `src/index.ts`. The documented named `apply` export is used without parameters because no APIs are needed yet. Before adding `ctx`, identify the real Context/type-owning package from current DSH sources, add explicit compatible dependencies to this package, and use its actual exported types. Do not guess API names or import another workspace package's source. Runtime imports must resolve from the published package in a clean installation; npm dependencies do not establish Cordis injection.
+4. Declare and validate configuration when needed; the current no-op accepts an empty config. Bind every resource to the verified DSH lifecycle, with cleanup on disable/reload. Keep credentials out of source and patches.
+5. Add meaningful unit and integration tests for the actual behavior, missing services, reload/disable/re-enable, and configuration. Replace scaffold descriptions in both locale files and this README with truthful feature documentation. The original SVG is an open frame with a construction mark; replace it if another subject better describes the implemented feature. It contains no third-party assets.
+6. Build from this monorepo with `pnpm --filter '__PACKAGE_NAME__' build`. TypeScript is supplied by the root development toolchain; the package uses `tsc -p tsconfig.json`, extends `../../tsconfig.base.json`, and publishes prebuilt `dist` exports. No installation-time compiler or runtime dependencies are needed for the empty scaffold.
+7. Inspect the real `pnpm pack` tarball and test installation in a clean environment. Verify the actual Host behavior and metadata/icons in DSH, including English and Chinese, before claiming compatibility. The scaffold itself has not been installed or visually verified.
+8. Only after implementation and tests, change the default patch row to `disabled: false` or deliberately enable it in an authorized isolated test profile. Install only the built package directory/tarball using the DSH plugin manager when explicitly authorized; never the private monorepo root.
+
+## Optional Client/UI extension
+
+No Client entry or pretend UI API is generated. Before adding UI, inspect live Client slots and builtins, read the target version's Client manifest/bundler requirements, declare actual Client resources, and verify the existing DSH GUI. Host exports do not create a Client entry. Verify HMR conditions instead of promising an automatic update.
+
+## Suite participation and publication
+
+The generator does not edit `suite.config.json`. Add this package to that explicit list manually, then run `pnpm suite:generate`. Keep the same stable row ID in independent and suite assembly. One enabled bundle owns a given feature per profile: disable overlapping standalone bundles before moving to the suite, and avoid duplicate activation when moving back.
+
+Confirm that you control the explicitly supplied npm scope before publication. Add license, repository metadata, and a Changeset according to repository policy. No publish, dependency install, profile mutation, or Git operation is performed by the generator.
+
+## Generator safety limits
+
+Existing package paths (including symlinks) are rejected, and `packages` must be a real directory inside the selected repository. Generated names are deliberately restricted to lowercase kebab-case. Do not run the generator while another process is adversarially replacing repository directories: portable Node filesystem calls do not provide a race-proof directory transaction. An I/O failure can leave a partial new directory for inspection; it is never automatically deleted or overwritten.

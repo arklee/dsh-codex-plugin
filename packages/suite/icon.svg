@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <!-- Original suite artwork: three modules joined by a shared spine. -->
+  <path d="M10 11H6V25H10M6 18H17" stroke="#547FA6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="11" y="7" width="13" height="8" rx="2" stroke="#547FA6" stroke-width="2.5"/>
+  <rect x="18" y="14" width="12" height="8" rx="2" stroke="#4C9A8B" stroke-width="2.5"/>
+  <rect x="11" y="22" width="13" height="7" rx="2" stroke="#547FA6" stroke-width="2.5"/>
+</svg>

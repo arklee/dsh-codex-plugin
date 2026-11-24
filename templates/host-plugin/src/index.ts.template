@@ -1,0 +1,12 @@
+/**
+ * Development scaffold only. This plugin intentionally does nothing.
+ *
+ * TODO: Inspect the target DSH runtime and installed documentation. Add actual
+ * Context/API type dependencies to this package before accepting or using ctx.
+ * Register resources within apply with lifecycle-bound cleanup. Add meaningful
+ * tests and metadata, then explicitly enable the currently disabled patch row.
+ * No guessed DSH types, services, or Client APIs are provided here.
+ */
+export function apply(): void {
+  // TODO: implement the requested business functionality.
+}

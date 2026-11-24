@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+
+# Dependencies may not execute install scripts by default.
+ignoreScripts: true
+storeDir: .pnpm-store
+cacheDir: .pnpm-cache

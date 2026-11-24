@@ -1,0 +1,6 @@
+# Development scaffold: implement and test before explicitly enabling this row.
+- insert:
+    - id: __ROW_ID__
+      name: '__PACKAGE_NAME__'
+      disabled: true
+      config: {}
