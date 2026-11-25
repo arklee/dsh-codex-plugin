@@ -111,7 +111,7 @@ Generation rules:
 - The generator manages the suite's `workspace:` dependencies; corresponding dependencies are removed when packages leave the list.
 - Other manually maintained suite dependencies are preserved. A feature package's direct dependency referenced by a row is promoted to a direct dependency of the suite; conflicts produce errors.
 - Duplicate IDs, missing workspace dependencies, circular dependencies, out-of-bounds paths, and unsupported patch forms produce errors.
-- The generator supports restricted static forms of `id`, `name`, `config`, `disabled`, `inject`, `intercept`, and `isolate`. Overrides, groups, `!!js`, anchors, aliases, and similar features are unsupported; extend and test the generator first if you need them.
+- The generator supports restricted static forms of `id`, `name`, `config`, `disabled`, `inject`, `intercept`, and `isolate` on inserted rows. Existing rows may be disabled with `id`, `disabled: true`, and an optional `name` assertion; these operations retain their ordering before replacement inserts. Duplicate target ownership is rejected across the suite. Other overrides, groups, `!!js`, anchors, aliases, and similar features are unsupported; extend and test the generator first if you need them.
 
 After adding real features, update the suite README and both locales to remove empty-suite descriptions. When multiple packages reuse the same provider, design a single source of assembly ownership. The generator rejects duplicate row IDs rather than guessing which configuration to keep.
 

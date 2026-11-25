@@ -1,7 +1,7 @@
 {
   "name": "@arkli/dsh-suite",
   "version": "0.1.0",
-  "description": "Explicit composition of the plugins in this workspace; initially empty.",
+  "description": "Explicit composition of the model OAuth replacement and selected workspace plugins",
   "type": "module",
   "exports": {
     "./locale/*.json": "./locale/*.json",
@@ -21,8 +21,14 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "@arkli/dsh-model-oauth": "workspace:*",
+    "@arkli/dsh-model-oauth-adapter": "workspace:*",
+    "@arkli/dsh-model-oauth-authorization": "workspace:*",
+    "@arkli/dsh-model-oauth-ui": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "license": "MIT"
 }

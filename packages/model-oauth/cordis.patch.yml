@@ -1,0 +1,13 @@
+- id: llm-pi-ai
+  name: '@deepseek-ai/dsh-llm-pi-ai'
+  disabled: true
+- id: ui-settings-models
+  name: '@deepseek-ai/dsh-client-ui-settings-models'
+  disabled: true
+- insert:
+    - id: arkli-model-oauth-adapter
+      name: '@arkli/dsh-model-oauth-adapter'
+    - id: arkli-model-oauth-authorization
+      name: '@arkli/dsh-model-oauth-authorization'
+    - id: arkli-model-oauth-ui
+      name: '@arkli/dsh-model-oauth-ui'

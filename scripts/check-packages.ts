@@ -33,6 +33,7 @@ function checkExport(files: PackageFiles, value: unknown): void {
   if (typeof value === 'string') {
     if (!value.startsWith('./')) fail(`Export target must start with ./: ${value}`);
     const clean = safePath(value);
+    if (/\.(?:ts|tsx|mts|cts)$/.test(clean) && !/\.d\.(?:ts|mts|cts)$/.test(clean)) fail(`Export must point to built files, not TypeScript source: ${value}`);
     if (clean.includes('*')) {
       const expression = new RegExp(`^${clean.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`);
       if (![...files.keys()].some(path => expression.test(path))) fail(`Export matches no files: ${value}`);
@@ -55,23 +56,17 @@ function runtimeExport(files: PackageFiles, value: unknown, label: string): void
   }
   fail(`${label}: mounted plugins require an explicit runtime import/default export (not only types)`);
 }
-/** Validate real directory contents or exactly the files present in a packed tarball. */
-export function validatePackage(files: PackageFiles, packed = false): Manifest {
-  const manifest = readJson(files, 'package.json');
-  if (typeof manifest.name !== 'string' || packageName(manifest.name) !== manifest.name) fail('Invalid package name');
-  if (typeof manifest.version !== 'string' || !valid(manifest.version)) fail(`${manifest.name}: invalid version`);
+function isBundle(manifest: Manifest): boolean {
+  return manifest.dsh !== undefined && record(manifest.dsh, 'dsh').bundle !== undefined;
+}
+
+function validateBundle(files: PackageFiles, manifest: Manifest, exports: Record<string, unknown>): void {
   const engines = record(manifest.engines, 'engines');
   if (typeof engines.dsh !== 'string' || !engines.dsh.trim() || !validRange(engines.dsh)) fail(`${manifest.name}: engines.dsh must be a valid SemVer range`);
-  if (manifest.type !== 'module') fail(`${manifest.name}: use ESM (type: module)`);
-  if (!Array.isArray(manifest.files) || !manifest.files.length) fail(`${manifest.name}: declare publish files`);
-  const exports = record(manifest.exports, 'exports');
-  checkExport(files, exports);
   const patch = requireFile(files, patchPath(manifest));
-  const rows = parseAssemblyPatch(files.get(patch)!.toString('utf8'), manifest, manifest.name);
-  const ids = new Set<string>();
+  const rows = parseAssemblyPatch(files.get(patch)!.toString('utf8'), manifest, String(manifest.name));
+  // Existing-row name assertions identify installed plugins, not mounted modules.
   for (const row of rows) {
-    if (ids.has(row.id as string)) fail(`Duplicate row id: ${row.id}`);
-    ids.add(row.id as string);
     const specifier = row.name as string;
     if (packageName(specifier) === manifest.name) {
       const subpath = specifier === manifest.name ? '.' : `.${specifier.slice((manifest.name as string).length)}`;
@@ -94,9 +89,27 @@ export function validatePackage(files: PackageFiles, packed = false): Manifest {
   const iconBytes = files.get(iconPath)!;
   if (!/\.(svg|png|jpe?g|webp)$/i.test(iconPath) || iconBytes.length === 0 || iconBytes.length > 256 * 1024) fail('Icon must be a nonempty SVG/PNG/JPEG/WebP of at most 256 KiB');
   if (iconPath.endsWith('.svg') && !/<svg\b/.test(iconBytes.toString('utf8'))) fail('SVG icon has no SVG root');
+}
+
+/** Validate shared publish requirements and, for bundles only, DSH assembly and artwork. */
+export function validatePackage(files: PackageFiles, packed = false): Manifest {
+  const manifest = readJson(files, 'package.json');
+  if (typeof manifest.name !== 'string' || packageName(manifest.name) !== manifest.name) fail('Invalid package name');
+  if (typeof manifest.version !== 'string' || !valid(manifest.version)) fail(`${manifest.name}: invalid version`);
+  if (manifest.type !== 'module') fail(`${manifest.name}: use ESM (type: module)`);
+  if (!Array.isArray(manifest.files) || !manifest.files.length) fail(`${manifest.name}: declare publish files`);
+  const exports = record(manifest.exports, 'exports');
+  checkExport(files, exports);
+  if (!Object.keys(exports).length) fail(`${manifest.name}: declare explicit exports`);
+  if (isBundle(manifest)) validateBundle(files, manifest, exports);
   requireFile(files, 'README.md');
+  for (const path of manifest.files) {
+    if (typeof path !== 'string' || !path.trim()) fail(`${manifest.name}: publish files must be nonempty strings`);
+    if (/^(?:\.\/)?licen[cs]e(?:$|[.-])/i.test(path)) requireFile(files, path);
+  }
+  if (typeof manifest.license === 'string' && manifest.license.startsWith('SEE LICENSE IN ')) requireFile(files, manifest.license.slice('SEE LICENSE IN '.length));
   dependencies(manifest);
-  if (packed && manifest.private === true) fail(`${manifest.name}: private bundles cannot be published`);
+  if (packed && manifest.private === true) fail(`${manifest.name}: private ${isBundle(manifest) ? 'bundles' : 'packages'} cannot be published`);
   for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
     if (manifest[field] === undefined) continue;
     for (const [name, range] of Object.entries(record(manifest[field], field))) {
@@ -160,7 +173,7 @@ export async function checkPackages(root: string, pack = false): Promise<void> {
     const directory = join(packages, entry.name);
     const files = await directoryFiles(directory);
     const manifest = readJson(files, 'package.json');
-    if (!manifest.dsh || !record(manifest.dsh, 'dsh').bundle) continue; // Ordinary shared libraries are not DSH bundles.
+    if (manifest.private === true && !isBundle(manifest)) continue;
     validatePackage(files);
     if (pack) {
       await mkdir(join(root, '.artifacts'), { recursive: true });

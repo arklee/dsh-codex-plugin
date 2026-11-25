@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { validatePackage } from '../scripts/check-packages.ts';
+import { mkdtemp, mkdir, writeFile, rm, readdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { validatePackage, checkPackages, tarFiles } from '../scripts/check-packages.ts';
 import type { PackageFiles } from '../scripts/check-packages.ts';
 
 function fixture(): PackageFiles {
@@ -19,6 +22,95 @@ function change(files: PackageFiles, mutate: (manifest: any) => void): void {
   mutate(manifest);
   files.set('package.json', Buffer.from(JSON.stringify(manifest)));
 }
+
+function ordinary(): PackageFiles {
+  const files = fixture();
+  for (const path of ['cordis.patch.yml', 'locale/en.json', 'locale/zh.json', 'icon.svg']) files.delete(path);
+  files.set('dist/index.d.ts', Buffer.from('export declare function apply(): void;'));
+  files.set('LICENSE', Buffer.from('MIT'));
+  change(files, m => {
+    delete m.dsh;
+    delete m.engines;
+    m.license = 'MIT';
+    m.files = ['dist', 'LICENSE', 'README.md'];
+    m.exports = { '.': { types: './dist/index.d.ts', import: './dist/index.js' }, './modules/*': './dist/*.js' };
+  });
+  return files;
+}
+
+test('validates ordinary ESM packages without bundle metadata', () => {
+  assert.equal(validatePackage(ordinary(), true).name, '@fixture/dsh-demo');
+  const files = ordinary();
+  change(files, m => { m.dsh = { client: { platform: 'web' } }; });
+  assert.doesNotThrow(() => validatePackage(files, true));
+});
+
+test('ordinary packages require built exports, README and declared license files', () => {
+  for (const path of ['dist/index.js', 'dist/index.d.ts', 'README.md', 'LICENSE']) {
+    const files = ordinary(); files.delete(path);
+    assert.throws(() => validatePackage(files, true), /Missing|matches no files/);
+  }
+  for (const mutate of [
+    (m: any) => { m.type = 'commonjs'; },
+    (m: any) => { m.files = []; },
+    (m: any) => { m.exports = {}; },
+    (m: any) => { delete m.exports; },
+    (m: any) => { m.exports = { '.': './src/index.ts' }; },
+    (m: any) => { m.exports = { './other/*': './missing/*.js' }; },
+    (m: any) => { m.license = 'SEE LICENSE IN legal.txt'; },
+    (m: any) => { m.scripts = { install: 'tsc' }; },
+    (m: any) => { m.dependencies = { external: 'file:../external' }; },
+    (m: any) => { m.peerDependencies = { external: 'workspace:*' }; },
+    (m: any) => { m.optionalDependencies = { external: '../external' }; },
+  ]) {
+    const files = ordinary(); change(files, mutate);
+    assert.throws(() => validatePackage(files, true), /ESM|publish files|exports|built files|matches no files|Missing|lifecycle|distributable/);
+  }
+});
+
+test('packs bundles and ordinary companions while skipping private ordinary tooling', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-package-check-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const [name, files] of [['bundle', fixture()], ['adapter', ordinary()], ['ui', ordinary()]] as const) {
+    change(files, m => { m.name = '@fixture/' + name; });
+    if (name === 'bundle') files.set('cordis.patch.yml', Buffer.from('- insert: [{id: fixture, name: "@fixture/bundle"}]'));
+    for (const [path, bytes] of files) {
+      const target = join(root, 'packages', name, path);
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, bytes);
+    }
+  }
+  await mkdir(join(root, 'packages/tooling'));
+  await writeFile(join(root, 'packages/tooling/package.json'), '{"private":true}');
+  await checkPackages(root, true);
+  const names: unknown[] = [];
+  for (const directory of await readdir(join(root, '.artifacts'))) {
+    for (const archive of await readdir(join(root, '.artifacts', directory))) {
+      names.push(validatePackage(await tarFiles(join(root, '.artifacts', directory, archive)), true).name);
+    }
+  }
+  assert.deepEqual(names.sort(), ['@fixture/adapter', '@fixture/bundle', '@fixture/ui']);
+});
+
+test('validates replacement modules without requiring official target dependencies or exports', () => {
+  const files = fixture();
+  files.set('cordis.patch.yml', Buffer.from('- id: official\n  name: "@deepseek-ai/dsh-official"\n  disabled: true\n- id: self-old\n  name: "@fixture/dsh-demo/not-exported"\n  disabled: true\n' + files.get('cordis.patch.yml')!.toString()));
+  assert.deepEqual(validatePackage(files, true).dependencies, {});
+  change(files, m => { delete m.exports['.']; });
+  assert.throws(() => validatePackage(files), /Host plugin/);
+});
+
+test('rejects conflicting replacement targets and unsupported overrides in package validation', () => {
+  for (const patch of [
+    '- id: official\n  disabled: true\n- id: official\n  disabled: true\n',
+    '- id: fixture.demo\n  disabled: true\n',
+    '- id: official\n  disabled: true\n  config: {}\n',
+  ]) {
+    const files = fixture();
+    files.set('cordis.patch.yml', Buffer.from(patch + files.get('cordis.patch.yml')!.toString()));
+    assert.throws(() => validatePackage(files), /target ownership|existing-row disables/);
+  }
+});
 
 test('validates directory and distributable package content', () => {
   assert.equal(validatePackage(fixture()).name, '@fixture/dsh-demo');

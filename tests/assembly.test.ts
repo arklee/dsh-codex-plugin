@@ -43,7 +43,44 @@ test('promotes referenced direct dependency so suite can resolve it without hois
   assert.throws(() => generateAssembly([a], { ...suite, dependencies: { external: '^1.0.0' } }), /Conflicting suite dependency/);
 });
 
+test('preserves disable and replacement ordering without requiring official dependencies', () => {
+  const a = pkg('a', '- id: official-a\n  name: "@deepseek-ai/dsh-official"\n  disabled: true\n- insert: [{id: replacement-a, name: "@test/a"}]\n- id: official-client\n  disabled: true\n- insert: [{id: replacement-client, name: "@test/a/client"}]\n');
+  const b = pkg('b', '- id: official-b\n  disabled: true\n- insert: [{id: replacement-b, name: "@test/b"}]\n');
+  const output = generateAssembly([a, b], suite);
+  assert.deepEqual(parse(output.patch), [...parse(a.patch), ...parse(b.patch)]);
+  assert.deepEqual(parseAssemblyPatch(a.patch, a.manifest).map(row => row.id), ['replacement-a', 'replacement-client']);
+  assert.deepEqual(output.manifest.dependencies, { '@test/a': 'workspace:*', '@test/b': 'workspace:*' });
+  assert.deepEqual(generateAssembly([a, b], suite), output);
+  assert.deepEqual(parseAssemblyPatch(output.patch, output.manifest).map(row => row.id), ['replacement-a', 'replacement-client', 'replacement-b']);
+});
+
+test('rejects duplicate disables and insert/disable ownership conflicts in either order', () => {
+  const disable = '- id: shared\n  disabled: true\n';
+  const asserted = '- id: shared\n  name: "@deepseek-ai/other"\n  disabled: true\n';
+  const insert = '- insert: [{id: shared, name: "@test/a"}]\n';
+  for (const patch of [disable + disable, disable + asserted, disable + insert, insert + disable]) {
+    assert.throws(() => parseAssemblyPatch(patch, pkg().manifest), /target ownership/);
+  }
+  for (const patches of [[disable, disable], [disable, asserted], [disable, insert], [insert, disable]]) {
+    const a = pkg('a', patches[0]);
+    const b = pkg('b', patches[1]!.replace('@test/a', '@test/b'));
+    assert.throws(() => generateAssembly([a, b], suite), /target ownership/);
+  }
+});
+
 const rejected: [string, string, RegExp][] = [
+  ['reenable', '- id: official\n  disabled: false', /existing-row disables/],
+  ['null disable', '- id: official\n  disabled: null', /existing-row disables/],
+  ['string disable', '- id: official\n  disabled: "true"', /existing-row disables/],
+  ['disable config', '- id: official\n  disabled: true\n  config: {}', /existing-row disables/],
+  ['disable unknown field', '- id: official\n  disabled: true\n  typo: true', /existing-row disables/],
+  ['disable group', '- id: official\n  disabled: true\n  group: true', /existing-row disables/],
+  ['disable inject', '- id: official\n  disabled: true\n  inject: []', /existing-row disables/],
+  ['disable missing id', '- disabled: true', /target id/],
+  ['disable empty id', '- id: ""\n  disabled: true', /target id/],
+  ['disable empty assertion', '- id: official\n  name: ""\n  disabled: true', /name assertion/],
+  ['disable relative assertion', '- id: official\n  name: ./index.js\n  disabled: true', /Unsupported npm plugin name/],
+  ['disable mixed insert', '- id: official\n  disabled: true\n  insert: []', /only flat insert/],
   ['override', '- id: existing\n  config: {}', /only flat insert/],
   ['group target', '- id: group\n  insert: []', /only flat insert/],
   ['group row', '- insert: [{id: a, name: cordis:group, group: true}]', /unsupported row field/],

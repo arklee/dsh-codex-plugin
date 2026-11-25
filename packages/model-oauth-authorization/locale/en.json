@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Model OAuth authorization",
+    "description": "Owner-only model sign-in conversations over the DSH gateway."
+  }
+}

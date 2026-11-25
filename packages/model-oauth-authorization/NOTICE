@@ -1,0 +1,4 @@
+The authorization controller, message types, and baseline tests are adapted from DeepSeek Harness, packages/api/settings-controller, at reference commit fb864b0140.
+Test fixtures are adapted from packages/api/gateway/tests/peer.ts and packages/credentials/credentials/tests/memory.ts.
+Copyright (c) 2026 DeepSeek. Distributed under the MIT license included in LICENSE.
+The package icon and integration code are original contributions under the same license.

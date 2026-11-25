@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "模型 OAuth 授权",
+    "description": "通过 DSH 网关提供仅限所有者的模型登录交互。"
+  }
+}

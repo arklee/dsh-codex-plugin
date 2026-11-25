@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.28.5",
-  "engines": { "node": ">=22.18.0" },
+  "engines": { "node": ">=24.22.3" },
   "scripts": {
     "create:plugin": "node scripts/create-plugin.ts",
     "suite:generate": "node scripts/generate-suite.ts",

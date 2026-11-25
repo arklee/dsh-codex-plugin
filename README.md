@@ -6,11 +6,11 @@ A pnpm + TypeScript monorepo for developing and distributing DeepSeek Harness pl
 
 The workspace, Host plugin scaffold, aggregate assembly generator, package-content validation, independent versioning, and CI are implemented.
 
-**There is no Codex integration or other feature plugin yet.** `packages/suite` is currently empty; `templates/host-plugin` is a development scaffold that is disabled by default and does not claim to provide any functionality. No user DSH profile has been modified, and no npm packages have been published.
+The [model OAuth replacement](packages/model-oauth/README.md) replaces the built-in model adapter and Models settings page with pi-ai 1.6.0 and provider OAuth. It is available independently or through `packages/suite`. Existing model configuration requires an explicit migration to the replacement row; credentials retain their original storage keys. No npm packages have been published.
 
 ## Quick start
 
-Requires **Node.js ≥ 22.18** and **pnpm 11.28.5**. Use your existing pnpm/Corepack installation method; the repository pins the `packageManager` version.
+Requires **Node.js ≥ 24.22.3**, **pnpm 11.28.5**, and the `patch` utility for building the pi-ai derivative. Use your existing pnpm/Corepack installation method; the repository pins the `packageManager` version.
 
 ```sh
 pnpm install --ignore-scripts
@@ -84,7 +84,12 @@ See the [plugin development guide](docs/plugin-development.md) for the full proc
 ## Directory layout
 
 ```text
-packages/suite/         Aggregate bundle (initially empty)
+packages/model-oauth/  Standalone replacement bundle
+packages/model-oauth-adapter/ Replacement model adapter
+packages/model-oauth-authorization/ OAuth RPC controller
+packages/model-oauth-ui/ Replacement Models settings UI
+packages/pi-ai-patched/ Redistributable patched pi-ai runtime
+packages/suite/         Aggregate bundle
 templates/host-plugin/ Development template, not a feature plugin
 scripts/               Scaffolding, assembly, and package-validation tools
 tests/                 Tooling and isolated distribution tests
@@ -97,7 +102,7 @@ Future feature packages belong in `packages/<slug>`. Ordinary shared libraries c
 
 ## Tooling support boundaries
 
-- The suite generator currently supports only a single YAML patch file, flat `insert` entries, and plain JSON configuration. It rejects overrides, groups, relative plugin names, YAML tags (including `!!js`), anchors, and aliases. Unsupported forms produce errors rather than silently dropping fields.
+- The suite generator supports a single YAML patch file, flat `insert` entries, existing-row `disabled: true` overrides with optional name assertions, and plain JSON configuration. It rejects other overrides, groups, relative plugin names, YAML tags (including `!!js`), anchors, and aliases. Unsupported forms produce errors rather than silently dropping fields.
 - The bundle validator uses the same restricted patch dialect. Extend the generator, validator, and tests before using more complex DSH features, rather than disabling checks.
 - The current release dependency policy supports registry SemVer ranges. After packing, `workspace:`, local paths, Git/URL dependencies, and other non-SemVer dependency declarations are rejected. Explicitly extend the policy first if other sources are needed.
 - The validator checks resource existence and basic formats; it is not a complete DSH Loader or image renderer. Host self-referencing entry points require explicit exports; full wildcard and custom-condition resolution is not implemented.
@@ -107,9 +112,9 @@ Future feature packages belong in `packages/<slug>`. Ordinary shared libraries c
 
 - Replace the suite's example package name, `@arkli/dsh-suite`, with a name you have permission to publish; feature package scopes are specified explicitly in the creation command.
 - The initial DSH range is exactly `0.2.3-alpha.2`, not a promise of compatibility with other versions; verify it again during development.
-- Choose an appropriate license and repository URL; this infrastructure does not make a licensing decision for you.
+- Preserve the feature packages' MIT licenses and third-party notices, and set the intended repository URL.
 - Align `baseBranch` in `.changeset/config.json` with the actual default branch (`main` by default).
-- Implement real features and remove scaffold/empty-suite descriptions before publishing. Do not publish nonfunctional placeholder packages.
+- Do not publish nonfunctional scaffold packages.
 - Pass all checks with `pnpm check && pnpm check:pack`, then perform isolated DSH validation as described in the [development guide](docs/plugin-development.md).
 
 There are no automatic publishing scripts or credential configuration. Publishing, Git pushes, and profile changes require an explicit decision by the maintainer.

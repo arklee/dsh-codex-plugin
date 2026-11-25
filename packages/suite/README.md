@@ -1,6 +1,6 @@
 # Plugin suite
 
-This package is the aggregate installation entry for the repository's explicit plugin list. **The list is currently empty; it provides no Codex, Git, or other business functionality.** It prepares the repository for future combined distribution. Do not publish the empty suite to npm.
+This package installs the [model OAuth replacement](../model-oauth/README.md), including its adapter, owner-only authorization RPC, and replacement Models settings UI. It assembles feature packages without copying their implementation.
 
 ## Maintenance
 
@@ -13,7 +13,7 @@ pnpm check
 pnpm check:pack
 ```
 
-The generator updates this package's patch and workspace dependencies without copying feature implementations. Do not edit the generated patch manually. When adding real features, update this README and both English and Chinese descriptions, remove the empty-suite notices, and accurately list the capabilities provided.
+The generator updates this package's patch and workspace dependencies without copying feature implementations. Do not edit the generated patch manually. When adding features, update this README and both English and Chinese descriptions.
 
 ## Installation and migration
 
@@ -23,7 +23,7 @@ Exactly one enabled bundle should own the assembly of a given feature. Disable o
 
 ## Compatibility and publication
 
-The initial manifest targets exactly DSH `0.2.3-alpha.2`. This was the target version when the infrastructure was created; actual plugin execution and GUI behavior have not been verified. Reconfirm the APIs and compatibility after adding business functionality.
+The manifest targets exactly DSH `0.2.3-alpha.2`. Follow the feature's configuration migration and rollback instructions before switching an existing profile. Real provider login and inference require credentials and separate verification; package tests do not establish provider account eligibility.
 
 `@arkli/dsh-suite` is a provisional publication name. Before publishing, replace it with a scope you control, confirm the license, and validate the packed artifacts. Nothing is published or installed automatically.
 

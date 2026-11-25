@@ -1,0 +1,4 @@
+- insert:
+    - id: arkli-model-oauth-authorization
+      name: '@arkli/dsh-model-oauth-authorization'
+      config: {}

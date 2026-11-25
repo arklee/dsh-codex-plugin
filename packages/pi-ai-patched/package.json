@@ -1,0 +1,91 @@
+{
+  "name": "@arkli/pi-ai-patched",
+  "version": "1.6.0-arkli.0",
+  "description": "pi-ai 1.6.0 with Gemini OpenAI-compatible thought signature replay",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22.19.0" },
+  "sideEffects": [
+    "./dist/compat.js",
+    "./dist/images.js",
+    "./dist/providers/images/register-builtins.js"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./models": {
+      "types": "./dist/models.d.ts",
+      "import": "./dist/models.js"
+    },
+    "./session-resources": {
+      "types": "./dist/session-resources.d.ts",
+      "import": "./dist/session-resources.js"
+    },
+    "./compat": {
+      "types": "./dist/compat.d.ts",
+      "import": "./dist/compat.js"
+    },
+    "./providers/*": {
+      "types": "./dist/providers/*.d.ts",
+      "import": "./dist/providers/*.js"
+    },
+    "./api/*": {
+      "types": "./dist/api/*.d.ts",
+      "import": "./dist/api/*.js"
+    },
+    "./utils/*": {
+      "types": "./dist/utils/*.d.ts",
+      "import": "./dist/utils/*.js"
+    },
+    "./oauth": {
+      "types": "./dist/oauth.d.ts",
+      "import": "./dist/oauth.js"
+    },
+    "./bedrock-provider": {
+      "types": "./dist/bedrock-provider.d.ts",
+      "import": "./dist/bedrock-provider.js"
+    },
+    "./bun-oauth": {
+      "types": "./dist/bun-oauth.d.ts",
+      "import": "./dist/bun-oauth.js"
+    },
+    "./lazy-bedrock-provider": {
+      "types": "./dist/lazy-bedrock-provider.d.ts",
+      "import": "./dist/lazy-bedrock-provider.js"
+    },
+    "./lazy-oauth": {
+      "types": "./dist/lazy-oauth.d.ts",
+      "import": "./dist/lazy-oauth.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "LICENSE-DeepSeek"
+  ],
+  "scripts": {
+    "build": "node build.ts",
+    "test": "node --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.129.0",
+    "@aws-sdk/client-bedrock-runtime": "3.1127.0",
+    "@earendil-works/pi-schema": "1.6.0",
+    "@earendil-works/pi-telemetry": "1.6.0",
+    "@google/genai": "2.32.0",
+    "@smithy/node-http-handler": "4.12.1",
+    "http-proxy-agent": "9.1.0",
+    "https-proxy-agent": "9.1.0",
+    "openai": "7.59.0",
+    "partial-json": "0.1.7"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "1.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

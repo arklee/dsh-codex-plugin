@@ -50,8 +50,19 @@ function json(value: unknown, label: string): void {
   if (value && typeof value === 'object') { Object.values(value).forEach(item => json(item, label)); return; }
   fail(`${label}: only ordinary JSON values and safe numbers are supported`);
 }
-/** Parse the deliberately restricted, lossless subset of the Loader patch dialect. */
-export function parseAssemblyPatch(source: string, manifest: Manifest, label = 'patch'): Record<string, unknown>[] {
+export type AssemblyOperation = { insert: Record<string, unknown>[] } | { id: string; name?: string; disabled: true };
+
+function claimTarget(targets: Map<string, 'insert' | 'disable'>, id: string, kind: 'insert' | 'disable', label: string): void {
+  const previous = targets.get(id);
+  if (previous) {
+    if (previous === 'insert' && kind === 'insert') fail(`${label}: Duplicate row id: ${id}`);
+    fail(`${label}: Duplicate or conflicting target ownership: ${id} (${previous}, ${kind})`);
+  }
+  targets.set(id, kind);
+}
+
+/** Parse flat inserts and existing-row disables, preserving operation order. Names on disables are assertions, not module dependencies. */
+export function parseAssemblyOperations(source: string, manifest: Manifest, label = 'patch'): AssemblyOperation[] {
   const doc = parseDocument(source, { uniqueKeys: true });
   if (doc.errors.length) fail(`${label}: ${doc.errors.map(error => error.message).join('; ')}`);
   visit(doc, (_key, node) => {
@@ -67,22 +78,34 @@ export function parseAssemblyPatch(source: string, manifest: Manifest, label = '
   if (doc.warnings.length) fail(`${label}: ${doc.warnings.map(warning => warning.message).join('; ')}`);
   const patches: unknown = doc.toJS();
   json(patches, label);
-  if (!Array.isArray(patches)) fail(`${label}: expected a YAML list of insert patches`);
+  if (!Array.isArray(patches)) fail(`${label}: expected a YAML list of assembly patches`);
   const owner = text(manifest.name, `${label} package name`);
   if (packageName(owner) !== owner) fail(`${label}: invalid package name ${owner}`);
   const allowedNames = new Set([owner, ...Object.keys(dependencies(manifest))]);
-  const rows: Record<string, unknown>[] = [];
-  const ids = new Set<string>();
+  const operations: AssemblyOperation[] = [];
+  const targets = new Map<string, 'insert' | 'disable'>();
   for (const patch of patches) {
     const entry = object(patch, label);
-    if (Object.keys(entry).length !== 1 || !Array.isArray(entry.insert)) fail(`${label}: only flat insert patches are supported (no overrides or groups)`);
+    if (!('insert' in entry)) {
+      if (Object.keys(entry).some(key => !['id', 'name', 'disabled'].includes(key)) || entry.disabled !== true) fail(`${label}: only flat insert patches or existing-row disables (disabled: true) are supported`);
+      const id = text(entry.id, `${label} disable target id`);
+      claimTarget(targets, id, 'disable', label);
+      const operation: AssemblyOperation = { id, disabled: true };
+      if ('name' in entry) {
+        operation.name = text(entry.name, `${label} disable name assertion`);
+        packageName(operation.name);
+      }
+      operations.push(operation);
+      continue;
+    }
+    if (Object.keys(entry).length !== 1 || !Array.isArray(entry.insert)) fail(`${label}: only flat insert patches are supported (no group targets or mixed overrides)`);
+    const rows: Record<string, unknown>[] = [];
     for (const raw of entry.insert) {
       const row = object(raw, label);
       const allowed = ['id', 'name', 'config', 'disabled', 'inject', 'intercept', 'isolate'];
       for (const key of Object.keys(row)) if (!allowed.includes(key)) fail(`${label}: unsupported row field ${key}`);
       const id = text(row.id, `${label} row id`);
-      if (ids.has(id)) fail(`${label}: Duplicate row id: ${id}`);
-      ids.add(id);
+      claimTarget(targets, id, 'insert', label);
       const name = text(row.name, `${label} row name`);
       if (!allowedNames.has(packageName(name))) fail(`${label}: ${name} is not supplied by this package or its direct dependencies`);
       if ('disabled' in row && row.disabled !== null && typeof row.disabled !== 'boolean') fail(`${label}: disabled must be boolean or null`);
@@ -96,8 +119,13 @@ export function parseAssemblyPatch(source: string, manifest: Manifest, label = '
       }
       rows.push(row);
     }
+    operations.push({ insert: rows });
   }
-  return rows;
+  return operations;
+}
+/** Return inserted modules only, validating the entire patch including existing-row disables. */
+export function parseAssemblyPatch(source: string, manifest: Manifest, label = 'patch'): Record<string, unknown>[] {
+  return parseAssemblyOperations(source, manifest, label).flatMap(operation => 'insert' in operation ? operation.insert : []);
 }
 /** Pure generation; workspace manifests include shared libraries for graph validation. */
 export function generateAssembly(packages: AssemblyPackage[], suite: Manifest, workspace: Manifest[] = packages.map(pkg => pkg.manifest)): AssemblyResult {
@@ -124,7 +152,7 @@ export function generateAssembly(packages: AssemblyPackage[], suite: Manifest, w
   }
   for (const name of known.keys()) walk(name);
   const next = Object.fromEntries(Object.entries(dependencies(suite)).filter(([, range]) => !range.startsWith('workspace:')));
-  const rows: Record<string, unknown>[] = [], ids = new Set<string>(), names = new Set<string>();
+  const operations: AssemblyOperation[] = [], targets = new Map<string, 'insert' | 'disable'>(), names = new Set<string>();
   for (const pkg of packages) {
     patchPath(pkg.manifest);
     const name = text(pkg.manifest.name, `${pkg.directory} name`);
@@ -133,19 +161,28 @@ export function generateAssembly(packages: AssemblyPackage[], suite: Manifest, w
     if (!known.has(name)) fail(`Selected package is absent from workspace: ${name}`);
     next[name] = 'workspace:*';
     const ownDependencies = dependencies(pkg.manifest);
-    for (const row of parseAssemblyPatch(pkg.patch, pkg.manifest, pkg.directory)) {
-      const id = row.id as string;
-      if (ids.has(id)) fail(`Duplicate row id: ${id}`);
-      ids.add(id); rows.push(row);
-      const provider = packageName(row.name as string);
-      if (provider !== name) {
-        const range = known.has(provider) ? 'workspace:*' : ownDependencies[provider]!;
-        if (next[provider] && next[provider] !== range) fail(`Conflicting suite dependency ${provider}: ${next[provider]} versus ${range}`);
-        next[provider] = range;
+    for (const operation of parseAssemblyOperations(pkg.patch, pkg.manifest, pkg.directory)) {
+      if (!('insert' in operation)) {
+        claimTarget(targets, operation.id, 'disable', pkg.directory);
+        operations.push(operation);
+        continue;
       }
+      for (const row of operation.insert) {
+        claimTarget(targets, row.id as string, 'insert', pkg.directory);
+        const provider = packageName(row.name as string);
+        if (provider !== name) {
+          const range = known.has(provider) ? 'workspace:*' : ownDependencies[provider]!;
+          if (next[provider] && next[provider] !== range) fail(`Conflicting suite dependency ${provider}: ${next[provider]} versus ${range}`);
+          next[provider] = range;
+        }
+      }
+      // Only adjacent inserts may coalesce; a disable retains its source position.
+      const previous = operations.at(-1);
+      if (previous && 'insert' in previous) previous.insert.push(...operation.insert);
+      else if (operation.insert.length) operations.push(operation);
     }
   }
   const sources = packages.map(pkg => pkg.directory).join(', ') || '(none)';
-  const patch = `# Generated by scripts/generate-suite.ts; do not edit.\n# Sources (ordered): ${sources}\n${stringify(rows.length ? [{ insert: rows }] : [], { lineWidth: 0 })}`;
+  const patch = `# Generated by scripts/generate-suite.ts; do not edit.\n# Sources (ordered): ${sources}\n${stringify(operations, { lineWidth: 0 })}`;
   return { patch, manifest: { ...suite, dependencies: Object.fromEntries(Object.entries(next).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) } };
 }

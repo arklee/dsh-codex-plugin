@@ -1,0 +1,33 @@
+{
+  "name": "@arkli/dsh-model-oauth",
+  "version": "0.1.0",
+  "description": "Replacement model adapter and Models settings page with provider OAuth",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "locale",
+    "icon.svg",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": "0.2.3-alpha.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@arkli/dsh-model-oauth-adapter": "workspace:*",
+    "@arkli/dsh-model-oauth-authorization": "workspace:*",
+    "@arkli/dsh-model-oauth-ui": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
